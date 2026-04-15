@@ -381,7 +381,32 @@
     }
     .modal-overlay { align-items: center; }
   }
+  /* Google Autocomplete dropdown */
+  .pac-container {
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    box-shadow: var(--shadow);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
+    z-index: 10000 !important;
+    margin-top: 4px;
+  }
+
+  .pac-item {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .pac-item:hover { background: #fff3e6; }
+  .pac-item-selected { background: #fff3e6; }
+
+  .auto-filled {
+    border-color: var(--primary) !important;
+    background: #fffbf5 !important;
+  }
 </style>
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4&libraries=places&language=zh-TW&callback=initAutocomplete"></script>
 </head>
 <body>
 
@@ -422,7 +447,8 @@
       <input type="hidden" id="editId">
       <div class="form-group">
         <label>店家名稱 *</label>
-        <input type="text" id="fName" required placeholder="例：鼎泰豐">
+        <input type="text" id="fName" required placeholder="例：鼎泰豐" autocomplete="off">
+        <div id="autoFillHint" style="font-size:0.75rem;color:var(--primary);margin-top:4px;display:none;">自動帶入資料中...</div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -475,9 +501,12 @@
 <script>
 const LS_KEY = 'foodmap_shops';
 const typeEmoji = { '餐廳': '🍽️', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
+const GAPI_KEY = 'AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4';
 
 let shops = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
 let activeFilter = 'all';
+let autocomplete = null;
+let placesService = null;
 
 const $ = id => document.getElementById(id);
 const cardList = $('cardList');
@@ -494,6 +523,129 @@ function mapsUrl(address, name) {
   return `https://www.google.com/maps/search/?api=1&query=${q}`;
 }
 
+/* ── Google Places Autocomplete ── */
+function initAutocomplete() {
+  const input = $('fName');
+  autocomplete = new google.maps.places.Autocomplete(input, {
+    types: ['establishment'],
+    componentRestrictions: { country: 'tw' },
+    fields: ['name', 'formatted_address', 'address_components', 'geometry', 'opening_hours', 'types', 'place_id']
+  });
+
+  // Create a dummy div for PlacesService (needed for nearbySearch)
+  placesService = new google.maps.places.PlacesService(document.createElement('div'));
+
+  autocomplete.addListener('place_changed', onPlaceSelected);
+}
+window.initAutocomplete = initAutocomplete;
+
+function onPlaceSelected() {
+  const place = autocomplete.getPlace();
+  if (!place || !place.name) return;
+
+  const hint = $('autoFillHint');
+  hint.style.display = 'block';
+  hint.textContent = '自動帶入資料中...';
+
+  // Fill name
+  $('fName').value = place.name;
+
+  // Fill address
+  if (place.formatted_address) {
+    $('fAddress').value = place.formatted_address;
+    $('fAddress').classList.add('auto-filled');
+  }
+
+  // Extract district (區域) from address_components
+  if (place.address_components) {
+    const district = place.address_components.find(c =>
+      c.types.includes('administrative_area_level_3') ||
+      c.types.includes('sublocality_level_1') ||
+      c.types.includes('sublocality')
+    );
+    if (district) {
+      $('fArea').value = district.long_name;
+      $('fArea').classList.add('auto-filled');
+    }
+  }
+
+  // Fill opening hours
+  if (place.opening_hours && place.opening_hours.weekday_text) {
+    const today = new Date().getDay();
+    const idx = today === 0 ? 6 : today - 1;
+    const todayHours = place.opening_hours.weekday_text[idx];
+    if (todayHours) {
+      const timePart = todayHours.replace(/^.*?:\s*/, '');
+      $('fHours').value = timePart;
+      $('fHours').classList.add('auto-filled');
+    }
+  }
+
+  // Auto-detect type from Google types
+  if (place.types) {
+    const t = place.types;
+    if (t.includes('bar') || t.includes('night_club')) {
+      $('fType').value = '酒吧';
+    } else if (t.includes('cafe')) {
+      $('fType').value = '咖啡廳';
+    } else if (t.includes('restaurant') || t.includes('food')) {
+      $('fType').value = '餐廳';
+    }
+    $('fType').classList.add('auto-filled');
+  }
+
+  // Find nearest MRT station
+  if (place.geometry && place.geometry.location) {
+    findNearestMRT(place.geometry.location);
+  }
+
+  setTimeout(() => {
+    hint.textContent = '已自動帶入 Google Maps 資料';
+    setTimeout(() => { hint.style.display = 'none'; }, 2000);
+  }, 500);
+}
+
+function findNearestMRT(location) {
+  const request = {
+    location: location,
+    radius: 1000,
+    type: 'transit_station',
+    keyword: '捷運'
+  };
+
+  placesService.nearbySearch(request, (results, status) => {
+    if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
+      // Find the closest one
+      let closest = results[0];
+      let closestDist = getDistance(location, results[0].geometry.location);
+
+      for (let i = 1; i < results.length; i++) {
+        const d = getDistance(location, results[i].geometry.location);
+        if (d < closestDist) {
+          closestDist = d;
+          closest = results[i];
+        }
+      }
+
+      let name = closest.name;
+      // Normalize: ensure it ends with 站
+      if (!name.includes('站')) name += '站';
+      // Clean up common prefixes
+      name = name.replace(/^捷運/, '');
+
+      $('fMrt').value = name;
+      $('fMrt').classList.add('auto-filled');
+    }
+  });
+}
+
+function getDistance(p1, p2) {
+  const lat1 = p1.lat(), lng1 = p1.lng();
+  const lat2 = p2.lat(), lng2 = p2.lng();
+  return Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lng1 - lng2, 2));
+}
+
+/* ── Render ── */
 function renderCards() {
   const query = searchInput.value.trim().toLowerCase();
   let filtered = shops.filter(s => {
@@ -552,7 +704,13 @@ function esc(str) {
   return d.innerHTML;
 }
 
+function clearAutoFill() {
+  document.querySelectorAll('.auto-filled').forEach(el => el.classList.remove('auto-filled'));
+  $('autoFillHint').style.display = 'none';
+}
+
 function openModal(shop) {
+  clearAutoFill();
   $('modalTitle').textContent = shop ? '編輯店家' : '新增店家';
   $('editId').value = shop ? shop.id : '';
   $('fName').value = shop ? shop.name : '';
@@ -570,6 +728,7 @@ function openModal(shop) {
 function closeModal() {
   modalOverlay.classList.remove('open');
   shopForm.reset();
+  clearAutoFill();
 }
 
 window.editShop = function(id) {
