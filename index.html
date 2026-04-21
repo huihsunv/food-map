@@ -307,6 +307,8 @@ async function searchPlaces(query) {
   if (!res.ok) {
     const errBody = await res.text();
     console.error('Places API error:', res.status, errBody);
+    sgBox.innerHTML = `<div class="sg-loading" style="text-align:left;font-size:0.75rem;word-break:break-all;">API ${res.status}：${errBody.substring(0, 200)}</div>`;
+    sgBox.classList.add('open');
     return null;
   }
   const data = await res.json();
@@ -378,7 +380,6 @@ fName.addEventListener('input', function() {
     try {
       const suggestions = await searchPlaces(val);
       if (suggestions === null) {
-        sgBox.innerHTML = '<div class="sg-loading">API 錯誤，請查看 Console</div>';
         return;
       }
       if (suggestions.length === 0) {
@@ -397,7 +398,7 @@ fName.addEventListener('input', function() {
         item.addEventListener('click', () => onSelectPlace(item.dataset.placeId, item.querySelector('.sg-name').textContent));
       });
     } catch (e) {
-      sgBox.innerHTML = '<div class="sg-loading">搜尋失敗，請稍後再試</div>';
+      sgBox.innerHTML = `<div class="sg-loading">搜尋失敗：${e.message}</div>`;
     }
   }, 350);
 });
