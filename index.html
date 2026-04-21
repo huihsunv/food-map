@@ -310,6 +310,35 @@
   [data-theme="dark"] .card-stars .star-empty { color: #475569; }
   [data-theme="dark"] .auto-filled { background: #1e1b4b !important; border-color: var(--primary) !important; }
   [data-theme="dark"] .theme-toggle { background: rgba(255,255,255,0.08); }
+
+  /* Screenshot upload */
+  .screenshot-upload {
+    margin-bottom: 16px; padding: 16px; border: 2px dashed var(--border);
+    border-radius: 12px; text-align: center; cursor: pointer;
+    transition: all 0.2s; background: rgba(124,58,237,0.03);
+  }
+  .screenshot-upload:hover { border-color: var(--primary-light); background: rgba(124,58,237,0.06); }
+  .screenshot-upload .upload-icon { font-size: 1.5rem; margin-bottom: 4px; }
+  .screenshot-upload .upload-text { font-size: 0.8rem; color: var(--text-light); }
+  .screenshot-upload .upload-text strong { color: var(--primary); }
+  .screenshot-upload input { display: none; }
+  .screenshot-preview {
+    margin-top: 10px; max-height: 120px; border-radius: 8px;
+    object-fit: cover; display: none;
+  }
+  .screenshot-status {
+    margin-top: 8px; font-size: 0.8rem; color: var(--primary);
+    display: none; align-items: center; gap: 6px; justify-content: center;
+  }
+  .screenshot-status.show { display: flex; }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid var(--border);
+    border-top-color: var(--primary); border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  [data-theme="dark"] .screenshot-upload { border-color: var(--border); background: rgba(124,58,237,0.05); }
+  [data-theme="dark"] .screenshot-upload:hover { border-color: var(--primary); background: rgba(124,58,237,0.1); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -351,6 +380,16 @@
     <h2 id="modalTitle">新增店家</h2>
     <form id="shopForm">
       <input type="hidden" id="editId">
+      <div class="screenshot-upload" id="screenshotUpload">
+        <div class="upload-icon">&#128247;</div>
+        <div class="upload-text"><strong>上傳截圖</strong>，AI 自動辨識店家</div>
+        <input type="file" id="screenshotInput" accept="image/*">
+        <img class="screenshot-preview" id="screenshotPreview">
+        <div class="screenshot-status" id="screenshotStatus">
+          <div class="spinner"></div>
+          <span id="screenshotStatusText">AI 辨識中...</span>
+        </div>
+      </div>
       <div class="form-group">
         <label>店家名稱 *</label>
         <div class="name-wrapper">
@@ -559,6 +598,93 @@ async function findNearbyMRT(lat, lng) {
   return name;
 }
 
+/* ── Screenshot AI Recognition ── */
+const GEMINI_KEY = API_KEY; // same Google Cloud project key
+
+$('screenshotUpload').addEventListener('click', () => $('screenshotInput').click());
+
+$('screenshotInput').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  // Show preview
+  const preview = $('screenshotPreview');
+  const reader = new FileReader();
+  reader.onload = e => {
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+
+  // Show status
+  const status = $('screenshotStatus');
+  const statusText = $('screenshotStatusText');
+  status.classList.add('show');
+  statusText.textContent = 'AI 辨識中...';
+
+  try {
+    // Convert to base64
+    const base64 = await fileToBase64(file);
+
+    // Call Gemini API
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: '請從這張截圖中辨識出餐廳或店家的名稱。只回覆店家名稱，不要加任何其他文字。如果有多個店家，只回覆最主要的那一個。如果找不到店家名稱，回覆「無法辨識」。' },
+            { inline_data: { mime_type: file.type, data: base64 } }
+          ]
+        }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err.substring(0, 100));
+    }
+
+    const data = await res.json();
+    const shopName = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+    if (!shopName || shopName === '無法辨識') {
+      statusText.textContent = '無法辨識店家名稱，請手動輸入';
+      setTimeout(() => status.classList.remove('show'), 3000);
+      return;
+    }
+
+    statusText.textContent = `辨識到：${shopName}，搜尋中...`;
+
+    // Auto fill name and trigger Places search
+    fName.value = shopName;
+    fName.dispatchEvent(new Event('input'));
+
+    // Also try direct Places search to auto-fill details
+    const suggestions = await searchPlaces(shopName);
+    if (suggestions && suggestions.length > 0) {
+      const p = suggestions[0].placePrediction;
+      await onSelectPlace(p.placeId, p.structuredFormat.mainText.text);
+      statusText.textContent = `已辨識並帶入「${p.structuredFormat.mainText.text}」`;
+    } else {
+      statusText.textContent = `已辨識「${shopName}」，請從下拉選單選擇`;
+    }
+
+    setTimeout(() => status.classList.remove('show'), 4000);
+  } catch (e) {
+    statusText.textContent = '辨識失敗：' + e.message.substring(0, 50);
+    setTimeout(() => status.classList.remove('show'), 4000);
+  }
+});
+
+function fileToBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(file);
+  });
+}
+
 /* ── Autocomplete UI ── */
 const sgBox = $('sgBox');
 const fName = $('fName');
@@ -763,6 +889,9 @@ function closeModal() {
   $('shopForm').reset();
   clearAutoFill();
   sgBox.classList.remove('open');
+  $('screenshotPreview').style.display = 'none';
+  $('screenshotStatus').classList.remove('show');
+  $('screenshotInput').value = '';
 }
 
 window.editShop = function(id) {
