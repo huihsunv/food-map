@@ -179,6 +179,20 @@
 
   .auto-filled { border-color: var(--primary) !important; background: #fffbf5 !important; }
   .auto-hint { font-size: 0.75rem; color: var(--primary); margin-top: 4px; }
+
+  /* Star rating */
+  .star-rating { display: flex; gap: 4px; direction: rtl; justify-content: flex-end; }
+  .star-rating input { display: none; }
+  .star-rating label {
+    font-size: 1.6rem; cursor: pointer; color: #ddd; transition: color 0.15s;
+    line-height: 1;
+  }
+  .star-rating label:hover,
+  .star-rating label:hover ~ label,
+  .star-rating input:checked ~ label { color: #f9a825; }
+
+  .card-stars { color: #f9a825; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 6px; }
+  .card-stars .star-empty { color: #ddd; }
 </style>
 </head>
 <body>
@@ -257,6 +271,16 @@
         <div class="radio-group">
           <label><input type="radio" name="fStatus" value="want" checked><span>想去</span></label>
           <label><input type="radio" name="fStatus" value="visited"><span>已去過</span></label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>評分</label>
+        <div class="star-rating" id="starRating">
+          <input type="radio" name="fRating" id="star5" value="5"><label for="star5">&#9733;</label>
+          <input type="radio" name="fRating" id="star4" value="4"><label for="star4">&#9733;</label>
+          <input type="radio" name="fRating" id="star3" value="3"><label for="star3">&#9733;</label>
+          <input type="radio" name="fRating" id="star2" value="2"><label for="star2">&#9733;</label>
+          <input type="radio" name="fRating" id="star1" value="1"><label for="star1">&#9733;</label>
         </div>
       </div>
       <div class="form-group">
@@ -508,6 +532,7 @@ function renderCards() {
         </span>
       </div>
       <div class="card-type">${typeEmoji[s.type] || ''} ${esc(s.type)}</div>
+      ${s.rating ? `<div class="card-stars">${'&#9733;'.repeat(s.rating)}<span class="star-empty">${'&#9733;'.repeat(5 - s.rating)}</span></div>` : ''}
       <div class="card-info">
         ${s.area ? `<span><span class="icon">📍</span>${esc(s.area)}</span>` : ''}
         ${s.mrt ? `<span><span class="icon">🚇</span>${esc(s.mrt)}</span>` : ''}
@@ -548,6 +573,11 @@ function openModal(shop) {
   $('fAddress').value = shop ? shop.address : '';
   $('fNote').value = shop ? shop.note : '';
   document.querySelector(`input[name="fStatus"][value="${shop ? shop.status : 'want'}"]`).checked = true;
+  document.querySelectorAll('input[name="fRating"]').forEach(r => r.checked = false);
+  if (shop && shop.rating) {
+    const rEl = document.querySelector(`input[name="fRating"][value="${shop.rating}"]`);
+    if (rEl) rEl.checked = true;
+  }
   $('modalOverlay').classList.add('open');
   setTimeout(() => fName.focus(), 100);
 }
@@ -587,6 +617,7 @@ $('shopForm').addEventListener('submit', e => {
     hours: $('fHours').value.trim(),
     address: $('fAddress').value.trim(),
     status: document.querySelector('input[name="fStatus"]:checked').value,
+    rating: (() => { const r = document.querySelector('input[name="fRating"]:checked'); return r ? parseInt(r.value) : 0; })(),
     note: $('fNote').value.trim(),
   };
   const idx = shops.findIndex(x => x.id === id);
