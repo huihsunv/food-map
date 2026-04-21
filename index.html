@@ -425,17 +425,19 @@ async function onSelectPlace(placeId, name) {
       $('fAddress').classList.add('auto-filled');
     }
 
-    // District
+    // District — 抓「XX區」
+    let districtName = '';
     if (place.addressComponents) {
-      const district = place.addressComponents.find(c =>
-        c.types.includes('administrative_area_level_3') ||
-        c.types.includes('sublocality_level_1') ||
-        c.types.includes('sublocality')
-      );
-      if (district) {
-        $('fArea').value = district.longText;
-        $('fArea').classList.add('auto-filled');
-      }
+      const d = place.addressComponents.find(c => c.types.includes('administrative_area_level_2'));
+      if (d) districtName = d.longText;
+    }
+    if (!districtName && place.formattedAddress) {
+      const m = place.formattedAddress.match(/.{1,3}區/);
+      if (m) districtName = m[0];
+    }
+    if (districtName) {
+      $('fArea').value = districtName;
+      $('fArea').classList.add('auto-filled');
     }
 
     // Opening hours
