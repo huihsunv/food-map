@@ -681,7 +681,8 @@ function renderCards() {
     if (activeFilter === 'visited' && s.status !== 'visited') return false;
     if (activeFilter === 'want' && s.status !== 'want') return false;
     if (query) {
-      return [s.name, s.type, s.area, s.mrt, s.address, s.note].join(' ').toLowerCase().includes(query);
+      const hay = normalize([s.name, s.type, s.area, s.mrt, s.address, s.note].join(' '));
+      return hay.includes(normalize(query));
     }
     return true;
   });
@@ -718,6 +719,10 @@ function renderCards() {
       </div>
     </div>
   `).join('');
+}
+
+function normalize(str) {
+  return str.toLowerCase().replace(/臺/g, '台').replace(/裏/g, '裡');
 }
 
 function esc(str) {
