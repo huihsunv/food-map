@@ -194,6 +194,8 @@
   .card-stars { color: #f9a825; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 6px; }
   .card-stars .star-empty { color: #ddd; }
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -300,13 +302,62 @@ const LS_KEY = 'foodmap_shops';
 const API_KEY = 'AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4';
 const typeEmoji = { '餐廳': '🍽️', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
 
+// Firebase
+firebase.initializeApp({
+  apiKey: "AIzaSyCLB_1ZXKCbesK63JOXCXTVBP2xQT-iklU",
+  authDomain: "food-map-11e8b.firebaseapp.com",
+  projectId: "food-map-11e8b",
+  storageBucket: "food-map-11e8b.firebasestorage.app",
+  messagingSenderId: "750609562989",
+  appId: "1:750609562989:web:d437c6b60ec49212ac2e64"
+});
+const db = firebase.firestore();
+const shopsCol = db.collection('shops');
+
 let shops = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
 let activeFilter = 'all';
 let debounceTimer;
 
 const $ = id => document.getElementById(id);
 
-function save() { localStorage.setItem(LS_KEY, JSON.stringify(shops)); }
+function saveLocal() { localStorage.setItem(LS_KEY, JSON.stringify(shops)); }
+
+// Load from Firestore on startup
+async function loadFromFirestore() {
+  try {
+    const snapshot = await shopsCol.orderBy('createdAt', 'desc').get();
+    if (!snapshot.empty) {
+      shops = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      saveLocal();
+      renderCards();
+    } else if (shops.length > 0) {
+      // First time: migrate localStorage data to Firestore
+      for (const s of shops) {
+        await shopsCol.doc(s.id).set({ ...s, createdAt: Date.now() });
+      }
+    }
+  } catch (e) {
+    console.warn('Firestore 載入失敗，使用本地資料:', e.message);
+  }
+}
+
+async function saveShop(data) {
+  saveLocal();
+  try {
+    await shopsCol.doc(data.id).set({ ...data, createdAt: Date.now() });
+  } catch (e) {
+    console.warn('Firestore 儲存失敗:', e.message);
+  }
+}
+
+async function removeShop(id) {
+  saveLocal();
+  try {
+    await shopsCol.doc(id).delete();
+  } catch (e) {
+    console.warn('Firestore 刪除失敗:', e.message);
+  }
+}
 
 function mapsUrl(address, name) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || name)}`;
@@ -597,7 +648,8 @@ window.editShop = function(id) {
 window.deleteShop = function(id) {
   if (!confirm('確定要刪除這間店家嗎？')) return;
   shops = shops.filter(x => x.id !== id);
-  save();
+  saveLocal();
+  removeShop(id);
   renderCards();
 };
 
@@ -623,7 +675,8 @@ $('shopForm').addEventListener('submit', e => {
   const idx = shops.findIndex(x => x.id === id);
   if (idx >= 0) shops[idx] = data;
   else shops.unshift(data);
-  save();
+  saveLocal();
+  saveShop(data);
   closeModal();
   renderCards();
 });
@@ -640,6 +693,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 renderCards();
+loadFromFirestore();
 </script>
 </body>
 </html>
