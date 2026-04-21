@@ -304,7 +304,11 @@ async function searchPlaces(query) {
       languageCode: 'zh-TW'
     })
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    const errBody = await res.text();
+    console.error('Places API error:', res.status, errBody);
+    return null;
+  }
   const data = await res.json();
   return data.suggestions || [];
 }
@@ -373,6 +377,10 @@ fName.addEventListener('input', function() {
   debounceTimer = setTimeout(async () => {
     try {
       const suggestions = await searchPlaces(val);
+      if (suggestions === null) {
+        sgBox.innerHTML = '<div class="sg-loading">API 錯誤，請查看 Console</div>';
+        return;
+      }
       if (suggestions.length === 0) {
         sgBox.innerHTML = '<div class="sg-loading">找不到結果</div>';
         return;
