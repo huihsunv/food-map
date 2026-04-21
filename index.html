@@ -362,6 +362,7 @@
   <div class="filter-row">
     <button class="filter-btn active" data-filter="all">全部</button>
     <button class="filter-btn" data-filter="餐廳">餐廳</button>
+    <button class="filter-btn" data-filter="居酒屋">居酒屋</button>
     <button class="filter-btn" data-filter="酒吧">酒吧</button>
     <button class="filter-btn" data-filter="小吃">小吃</button>
     <button class="filter-btn" data-filter="咖啡廳">咖啡廳</button>
@@ -403,6 +404,7 @@
           <label>類型 *</label>
           <select id="fType" required>
             <option value="餐廳">餐廳</option>
+            <option value="居酒屋">居酒屋</option>
             <option value="酒吧">酒吧</option>
             <option value="小吃">小吃</option>
             <option value="咖啡廳">咖啡廳</option>
@@ -459,7 +461,7 @@
 <script>
 const LS_KEY = 'foodmap_shops';
 const API_KEY = 'AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4';
-const typeEmoji = { '餐廳': '🍽️', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
+const typeEmoji = { '餐廳': '🍽️', '居酒屋': '🏮', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
 
 // Firebase
 firebase.initializeApp({
