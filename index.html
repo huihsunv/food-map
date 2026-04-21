@@ -8,7 +8,6 @@
   :root {
     --primary: #e85d04;
     --primary-light: #f48c06;
-    --primary-dark: #dc2f02;
     --bg: #fdf6f0;
     --card-bg: #ffffff;
     --text: #2b2d42;
@@ -19,30 +18,19 @@
     --visited: #2d6a4f;
     --want: #e76f51;
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
+    background: var(--bg); color: var(--text); min-height: 100vh;
   }
-
   header {
     background: linear-gradient(135deg, var(--primary), var(--primary-light));
-    color: white;
-    padding: 28px 20px 24px;
-    text-align: center;
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    color: white; padding: 28px 20px 24px; text-align: center;
+    position: sticky; top: 0; z-index: 100;
     box-shadow: 0 4px 20px rgba(232,93,4,0.25);
   }
-
   header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: 2px; }
   header p { font-size: 0.9rem; opacity: 0.9; margin-top: 4px; }
-
   .container { max-width: 800px; margin: 0 auto; padding: 20px 16px 100px; }
 
   .search-bar { position: relative; margin-bottom: 20px; }
@@ -74,9 +62,8 @@
     position: relative; border-left: 4px solid var(--primary);
   }
   .card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-
   .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-  .card-name { font-size: 1.2rem; font-weight: 700; color: var(--text); }
+  .card-name { font-size: 1.2rem; font-weight: 700; }
   .card-badge { font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; white-space: nowrap; }
   .badge-visited { background: #d8f3dc; color: var(--visited); }
   .badge-want { background: #fde8e0; color: var(--want); }
@@ -89,7 +76,7 @@
   .card-info .icon { width: 18px; text-align: center; flex-shrink: 0; }
   .card-note {
     margin-top: 12px; padding: 10px 14px; background: #f8f9fa; border-radius: 8px;
-    font-size: 0.85rem; color: var(--text); line-height: 1.5; white-space: pre-wrap;
+    font-size: 0.85rem; line-height: 1.5; white-space: pre-wrap;
   }
   .card-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
   .btn-sm {
@@ -103,7 +90,6 @@
 
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
   .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
-  .empty-state p { font-size: 1rem; }
 
   .fab {
     position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px;
@@ -129,11 +115,12 @@
 
   .form-group { margin-bottom: 14px; }
   .form-group label {
-    display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: var(--text);
+    display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px;
   }
   .form-group input, .form-group select, .form-group textarea {
     width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px;
-    font-size: 0.95rem; outline: none; transition: border-color 0.2s; font-family: inherit; background: #fafafa;
+    font-size: 0.95rem; outline: none; transition: border-color 0.2s;
+    font-family: inherit; background: #fafafa;
   }
   .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     border-color: var(--primary); background: white;
@@ -170,30 +157,29 @@
     .modal-overlay { align-items: center; }
   }
 
-  /* Custom autocomplete dropdown */
+  /* Custom suggestions dropdown */
   .name-wrapper { position: relative; }
   .suggestions {
     position: absolute; top: 100%; left: 0; right: 0; z-index: 300;
-    background: var(--card-bg); border: 1.5px solid var(--border); border-top: none;
-    border-radius: 0 0 10px 10px; box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-    max-height: 220px; overflow-y: auto; display: none;
+    background: var(--card-bg); border: 1.5px solid var(--primary);
+    border-top: none; border-radius: 0 0 10px 10px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    max-height: 240px; overflow-y: auto; display: none;
   }
   .suggestions.open { display: block; }
-  .suggestion-item {
-    padding: 11px 14px; cursor: pointer; font-size: 0.9rem;
+  .sg-item {
+    padding: 12px 14px; cursor: pointer; font-size: 0.9rem;
     border-bottom: 1px solid #f0f0f0; transition: background 0.15s;
   }
-  .suggestion-item:last-child { border-bottom: none; }
-  .suggestion-item:hover, .suggestion-item.active { background: #fff3e6; }
-  .suggestion-item .sg-name { font-weight: 600; color: var(--text); }
-  .suggestion-item .sg-addr { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
+  .sg-item:last-child { border-bottom: none; }
+  .sg-item:hover { background: #fff3e6; }
+  .sg-name { font-weight: 600; }
+  .sg-addr { font-size: 0.78rem; color: var(--text-light); margin-top: 2px; }
+  .sg-loading { padding: 14px; text-align: center; color: var(--text-light); font-size: 0.85rem; }
 
   .auto-filled { border-color: var(--primary) !important; background: #fffbf5 !important; }
-  .auto-hint {
-    font-size: 0.75rem; color: var(--primary); margin-top: 4px; display: none;
-  }
+  .auto-hint { font-size: 0.75rem; color: var(--primary); margin-top: 4px; }
 </style>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4&libraries=places&language=zh-TW"></script>
 </head>
 <body>
 
@@ -208,7 +194,7 @@
     <input type="text" id="searchInput" placeholder="搜尋店名、區域、捷運站...">
   </div>
 
-  <div class="filter-row" id="filterRow">
+  <div class="filter-row">
     <button class="filter-btn active" data-filter="all">全部</button>
     <button class="filter-btn" data-filter="餐廳">餐廳</button>
     <button class="filter-btn" data-filter="酒吧">酒吧</button>
@@ -233,9 +219,9 @@
         <label>店家名稱 *</label>
         <div class="name-wrapper">
           <input type="text" id="fName" required placeholder="輸入店名，自動搜尋 Google Maps..." autocomplete="off">
-          <div class="suggestions" id="suggestions"></div>
+          <div class="suggestions" id="sgBox"></div>
         </div>
-        <div class="auto-hint" id="autoFillHint"></div>
+        <div class="auto-hint" id="autoHint" style="display:none;"></div>
       </div>
       <div class="form-row">
         <div class="form-group">
@@ -279,7 +265,7 @@
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-secondary" id="cancelBtn">取消</button>
-        <button type="submit" class="btn btn-primary" id="submitBtn">儲存</button>
+        <button type="submit" class="btn btn-primary">儲存</button>
       </div>
     </form>
   </div>
@@ -287,120 +273,174 @@
 
 <script>
 const LS_KEY = 'foodmap_shops';
+const API_KEY = 'AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4';
 const typeEmoji = { '餐廳': '🍽️', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
 
 let shops = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
 let activeFilter = 'all';
+let debounceTimer;
 
 const $ = id => document.getElementById(id);
-const cardList = $('cardList');
-const searchInput = $('searchInput');
-const modalOverlay = $('modalOverlay');
-const shopForm = $('shopForm');
-const suggestionsEl = $('suggestions');
 
-let acService, placesService, debounceTimer;
-
-function initGoogleServices() {
-  if (typeof google === 'undefined') return;
-  acService = new google.maps.places.AutocompleteService();
-  placesService = new google.maps.places.PlacesService(document.createElement('div'));
-}
-
-function save() {
-  localStorage.setItem(LS_KEY, JSON.stringify(shops));
-}
+function save() { localStorage.setItem(LS_KEY, JSON.stringify(shops)); }
 
 function mapsUrl(address, name) {
-  const q = encodeURIComponent(address || name);
-  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || name)}`;
 }
 
-/* ── Custom Autocomplete ── */
-$('fName').addEventListener('input', function() {
+/* ── Google Places REST API (no JS library needed) ── */
+
+async function searchPlaces(query) {
+  const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': API_KEY,
+    },
+    body: JSON.stringify({
+      input: query,
+      includedRegionCodes: ['tw'],
+      includedPrimaryTypes: ['restaurant', 'cafe', 'bar', 'food', 'meal_takeaway', 'meal_delivery', 'bakery'],
+      languageCode: 'zh-TW'
+    })
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.suggestions || [];
+}
+
+async function getPlaceDetails(placeId) {
+  const fields = 'displayName,formattedAddress,addressComponents,location,regularOpeningHours,types';
+  const res = await fetch(`https://places.googleapis.com/v1/places/${placeId}?languageCode=zh-TW`, {
+    headers: {
+      'X-Goog-Api-Key': API_KEY,
+      'X-Goog-FieldMask': fields,
+    }
+  });
+  if (!res.ok) return null;
+  return await res.json();
+}
+
+async function findNearbyMRT(lat, lng) {
+  const res = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': API_KEY,
+      'X-Goog-FieldMask': 'places.displayName,places.location',
+    },
+    body: JSON.stringify({
+      includedTypes: ['subway_station'],
+      maxResultCount: 5,
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: 1000.0
+        }
+      },
+      languageCode: 'zh-TW'
+    })
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.places || data.places.length === 0) return null;
+
+  let closest = data.places[0];
+  let minDist = Math.pow(closest.location.latitude - lat, 2) + Math.pow(closest.location.longitude - lng, 2);
+  for (let i = 1; i < data.places.length; i++) {
+    const d = Math.pow(data.places[i].location.latitude - lat, 2) + Math.pow(data.places[i].location.longitude - lng, 2);
+    if (d < minDist) { minDist = d; closest = data.places[i]; }
+  }
+
+  let name = closest.displayName.text;
+  name = name.replace(/^捷運/, '');
+  if (!name.includes('站')) name += '站';
+  return name;
+}
+
+/* ── Autocomplete UI ── */
+const sgBox = $('sgBox');
+const fName = $('fName');
+
+fName.addEventListener('input', function() {
   clearTimeout(debounceTimer);
   const val = this.value.trim();
-  if (val.length < 2 || !acService) { suggestionsEl.classList.remove('open'); return; }
+  if (val.length < 2) { sgBox.classList.remove('open'); return; }
 
-  debounceTimer = setTimeout(() => {
-    acService.getPlacePredictions({
-      input: val,
-      componentRestrictions: { country: 'tw' },
-      types: ['establishment']
-    }, (predictions, status) => {
-      if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) {
-        suggestionsEl.classList.remove('open');
+  sgBox.innerHTML = '<div class="sg-loading">搜尋中...</div>';
+  sgBox.classList.add('open');
+
+  debounceTimer = setTimeout(async () => {
+    try {
+      const suggestions = await searchPlaces(val);
+      if (suggestions.length === 0) {
+        sgBox.innerHTML = '<div class="sg-loading">找不到結果</div>';
         return;
       }
-      suggestionsEl.innerHTML = predictions.slice(0, 5).map((p, i) => `
-        <div class="suggestion-item" data-place-id="${p.place_id}" data-index="${i}">
-          <div class="sg-name">${p.structured_formatting.main_text}</div>
-          <div class="sg-addr">${p.structured_formatting.secondary_text || ''}</div>
-        </div>
-      `).join('');
-      suggestionsEl.classList.add('open');
+      sgBox.innerHTML = suggestions.slice(0, 5).map(s => {
+        const p = s.placePrediction;
+        return `<div class="sg-item" data-place-id="${p.placeId}">
+          <div class="sg-name">${p.structuredFormat.mainText.text}</div>
+          <div class="sg-addr">${p.structuredFormat.secondaryText ? p.structuredFormat.secondaryText.text : ''}</div>
+        </div>`;
+      }).join('');
 
-      suggestionsEl.querySelectorAll('.suggestion-item').forEach(item => {
-        item.addEventListener('click', () => selectPlace(item.dataset.placeId, item.querySelector('.sg-name').textContent));
+      sgBox.querySelectorAll('.sg-item').forEach(item => {
+        item.addEventListener('click', () => onSelectPlace(item.dataset.placeId, item.querySelector('.sg-name').textContent));
       });
-    });
-  }, 300);
+    } catch (e) {
+      sgBox.innerHTML = '<div class="sg-loading">搜尋失敗，請稍後再試</div>';
+    }
+  }, 350);
 });
 
-// Close suggestions when clicking outside
 document.addEventListener('click', e => {
-  if (!e.target.closest('.name-wrapper')) suggestionsEl.classList.remove('open');
+  if (!e.target.closest('.name-wrapper')) sgBox.classList.remove('open');
 });
 
-function selectPlace(placeId, name) {
-  suggestionsEl.classList.remove('open');
-  $('fName').value = name;
+async function onSelectPlace(placeId, name) {
+  sgBox.classList.remove('open');
+  fName.value = name;
 
-  const hint = $('autoFillHint');
+  const hint = $('autoHint');
   hint.style.display = 'block';
   hint.textContent = '自動帶入資料中...';
 
-  placesService.getDetails({
-    placeId: placeId,
-    fields: ['name', 'formatted_address', 'address_components', 'geometry', 'opening_hours', 'types']
-  }, (place, status) => {
-    if (status !== google.maps.places.PlacesServiceStatus.OK || !place) {
-      hint.textContent = '無法取得詳細資料';
-      setTimeout(() => hint.style.display = 'none', 2000);
-      return;
-    }
+  try {
+    const place = await getPlaceDetails(placeId);
+    if (!place) { hint.textContent = '無法取得資料'; return; }
 
     // Address
-    if (place.formatted_address) {
-      $('fAddress').value = place.formatted_address;
+    if (place.formattedAddress) {
+      $('fAddress').value = place.formattedAddress;
       $('fAddress').classList.add('auto-filled');
     }
 
     // District
-    if (place.address_components) {
-      const district = place.address_components.find(c =>
+    if (place.addressComponents) {
+      const district = place.addressComponents.find(c =>
         c.types.includes('administrative_area_level_3') ||
         c.types.includes('sublocality_level_1') ||
         c.types.includes('sublocality')
       );
       if (district) {
-        $('fArea').value = district.long_name;
+        $('fArea').value = district.longText;
         $('fArea').classList.add('auto-filled');
       }
     }
 
     // Opening hours
-    if (place.opening_hours && place.opening_hours.weekday_text) {
+    if (place.regularOpeningHours && place.regularOpeningHours.weekdayDescriptions) {
       const today = new Date().getDay();
       const idx = today === 0 ? 6 : today - 1;
-      const todayHours = place.opening_hours.weekday_text[idx];
-      if (todayHours) {
-        $('fHours').value = todayHours.replace(/^.*?:\s*/, '');
+      const text = place.regularOpeningHours.weekdayDescriptions[idx];
+      if (text) {
+        $('fHours').value = text.replace(/^.*?:\s*/, '');
         $('fHours').classList.add('auto-filled');
       }
     }
 
-    // Type detection
+    // Type
     if (place.types) {
       const t = place.types;
       if (t.includes('bar') || t.includes('night_club')) $('fType').value = '酒吧';
@@ -409,45 +449,25 @@ function selectPlace(placeId, name) {
       $('fType').classList.add('auto-filled');
     }
 
-    // Find nearest MRT
-    if (place.geometry && place.geometry.location) {
-      findNearestMRT(place.geometry.location);
+    // Nearest MRT
+    if (place.location) {
+      const mrt = await findNearbyMRT(place.location.latitude, place.location.longitude);
+      if (mrt) {
+        $('fMrt').value = mrt;
+        $('fMrt').classList.add('auto-filled');
+      }
     }
 
     hint.textContent = '已自動帶入 Google Maps 資料';
     setTimeout(() => hint.style.display = 'none', 2500);
-  });
+  } catch (e) {
+    hint.textContent = '帶入失敗：' + e.message;
+  }
 }
 
-function findNearestMRT(location) {
-  placesService.nearbySearch({
-    location: location,
-    radius: 1000,
-    type: 'transit_station',
-    keyword: '捷運'
-  }, (results, status) => {
-    if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
-      let closest = results[0];
-      let closestDist = dist(location, results[0].geometry.location);
-      for (let i = 1; i < results.length; i++) {
-        const d = dist(location, results[i].geometry.location);
-        if (d < closestDist) { closestDist = d; closest = results[i]; }
-      }
-      let name = closest.name.replace(/^捷運/, '');
-      if (!name.includes('站')) name += '站';
-      $('fMrt').value = name;
-      $('fMrt').classList.add('auto-filled');
-    }
-  });
-}
-
-function dist(a, b) {
-  return Math.pow(a.lat() - b.lat(), 2) + Math.pow(a.lng() - b.lng(), 2);
-}
-
-/* ── Render ── */
+/* ── Render Cards ── */
 function renderCards() {
-  const query = searchInput.value.trim().toLowerCase();
+  const query = $('searchInput').value.trim().toLowerCase();
   let filtered = shops.filter(s => {
     if (activeFilter !== 'all' && activeFilter !== 'visited' && activeFilter !== 'want') {
       if (s.type !== activeFilter) return false;
@@ -455,8 +475,7 @@ function renderCards() {
     if (activeFilter === 'visited' && s.status !== 'visited') return false;
     if (activeFilter === 'want' && s.status !== 'want') return false;
     if (query) {
-      const hay = [s.name, s.type, s.area, s.mrt, s.address, s.note].join(' ').toLowerCase();
-      return hay.includes(query);
+      return [s.name, s.type, s.area, s.mrt, s.address, s.note].join(' ').toLowerCase().includes(query);
     }
     return true;
   });
@@ -464,15 +483,12 @@ function renderCards() {
   $('countText').textContent = `共 ${filtered.length} 間店家`;
 
   if (filtered.length === 0) {
-    cardList.innerHTML = `
-      <div class="empty-state">
-        <div class="emoji">🗺️</div>
-        <p>${query || activeFilter !== 'all' ? '找不到符合的店家' : '還沒有店家，點右下角 + 新增吧！'}</p>
-      </div>`;
+    $('cardList').innerHTML = `<div class="empty-state"><div class="emoji">🗺️</div>
+      <p>${query || activeFilter !== 'all' ? '找不到符合的店家' : '還沒有店家，點右下角 + 新增吧！'}</p></div>`;
     return;
   }
 
-  cardList.innerHTML = filtered.map(s => `
+  $('cardList').innerHTML = filtered.map(s => `
     <div class="card">
       <div class="card-header">
         <div class="card-name">${esc(s.name)}</div>
@@ -506,14 +522,14 @@ function esc(str) {
 
 function clearAutoFill() {
   document.querySelectorAll('.auto-filled').forEach(el => el.classList.remove('auto-filled'));
-  $('autoFillHint').style.display = 'none';
+  $('autoHint').style.display = 'none';
 }
 
 function openModal(shop) {
   clearAutoFill();
   $('modalTitle').textContent = shop ? '編輯店家' : '新增店家';
   $('editId').value = shop ? shop.id : '';
-  $('fName').value = shop ? shop.name : '';
+  fName.value = shop ? shop.name : '';
   $('fType').value = shop ? shop.type : '餐廳';
   $('fArea').value = shop ? shop.area : '';
   $('fMrt').value = shop ? shop.mrt : '';
@@ -521,15 +537,15 @@ function openModal(shop) {
   $('fAddress').value = shop ? shop.address : '';
   $('fNote').value = shop ? shop.note : '';
   document.querySelector(`input[name="fStatus"][value="${shop ? shop.status : 'want'}"]`).checked = true;
-  modalOverlay.classList.add('open');
-  setTimeout(() => $('fName').focus(), 100);
+  $('modalOverlay').classList.add('open');
+  setTimeout(() => fName.focus(), 100);
 }
 
 function closeModal() {
-  modalOverlay.classList.remove('open');
-  shopForm.reset();
+  $('modalOverlay').classList.remove('open');
+  $('shopForm').reset();
   clearAutoFill();
-  suggestionsEl.classList.remove('open');
+  sgBox.classList.remove('open');
 }
 
 window.editShop = function(id) {
@@ -546,14 +562,14 @@ window.deleteShop = function(id) {
 
 $('fabBtn').addEventListener('click', () => openModal(null));
 $('cancelBtn').addEventListener('click', closeModal);
-modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+$('modalOverlay').addEventListener('click', e => { if (e.target === $('modalOverlay')) closeModal(); });
 
-shopForm.addEventListener('submit', e => {
+$('shopForm').addEventListener('submit', e => {
   e.preventDefault();
   const id = $('editId').value || Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const data = {
     id,
-    name: $('fName').value.trim(),
+    name: fName.value.trim(),
     type: $('fType').value,
     area: $('fArea').value.trim(),
     mrt: $('fMrt').value.trim(),
@@ -570,7 +586,7 @@ shopForm.addEventListener('submit', e => {
   renderCards();
 });
 
-searchInput.addEventListener('input', renderCards);
+$('searchInput').addEventListener('input', renderCards);
 
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -581,9 +597,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
   });
 });
 
-// Init
 renderCards();
-initGoogleServices();
 </script>
 </body>
 </html>
