@@ -300,7 +300,7 @@ async function searchPlaces(query) {
     body: JSON.stringify({
       input: query,
       includedRegionCodes: ['tw'],
-      includedPrimaryTypes: ['restaurant', 'cafe', 'bar', 'food', 'meal_takeaway', 'meal_delivery', 'bakery'],
+      includedPrimaryTypes: ['restaurant', 'cafe', 'bar', 'meal_takeaway', 'bakery'],
       languageCode: 'zh-TW'
     })
   });
