@@ -241,6 +241,68 @@
 
   .card-stars { color: #f9a825; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 6px; }
   .card-stars .star-empty { color: #ddd; }
+
+  /* Dark mode toggle */
+  .theme-toggle {
+    position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+    color: white; width: 36px; height: 36px; border-radius: 10px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; transition: all 0.2s;
+  }
+  .theme-toggle:hover { background: rgba(255,255,255,0.2); }
+  header { position: sticky; top: 0; z-index: 100; }
+  header .header-inner { position: relative; }
+
+  /* Dark mode */
+  [data-theme="dark"] {
+    --bg: #0f172a;
+    --card-bg: #1e293b;
+    --text: #e2e8f0;
+    --text-light: #94a3b8;
+    --border: #334155;
+    --shadow: 0 1px 3px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.3);
+  }
+  [data-theme="dark"] header {
+    background: linear-gradient(135deg, #020617 0%, #0f172a 50%, #1e293b 100%);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  [data-theme="dark"] .search-bar input {
+    background: var(--card-bg); color: var(--text); border-color: var(--border);
+  }
+  [data-theme="dark"] .search-bar input:focus { box-shadow: 0 0 0 3px rgba(124,58,237,0.2); }
+  [data-theme="dark"] .filter-btn { background: var(--card-bg); color: var(--text-light); border-color: var(--border); }
+  [data-theme="dark"] .filter-btn:hover { background: #1e1b4b; color: var(--primary-light); }
+  [data-theme="dark"] .card { border-color: var(--border); }
+  [data-theme="dark"] .card:hover { border-color: rgba(124,58,237,0.3); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  [data-theme="dark"] .card-type { background: #1e1b4b; border-color: #312e81; color: var(--primary-light); }
+  [data-theme="dark"] .badge-visited { background: #064e3b; color: #6ee7b7; border-color: #065f46; }
+  [data-theme="dark"] .badge-want { background: #4c0519; color: #fda4af; border-color: #881337; }
+  [data-theme="dark"] .card-note { background: #0f172a; border-color: #1e293b; color: #cbd5e1; }
+  [data-theme="dark"] .btn-edit { background: #334155; color: #cbd5e1; border-color: #475569; }
+  [data-theme="dark"] .btn-delete { background: #4c0519; color: #fda4af; border-color: #881337; }
+  [data-theme="dark"] .modal { background: #1e293b; }
+  [data-theme="dark"] .modal-overlay { background: rgba(0,0,0,0.6); }
+  [data-theme="dark"] .form-group input,
+  [data-theme="dark"] .form-group select,
+  [data-theme="dark"] .form-group textarea {
+    background: #0f172a; color: var(--text); border-color: var(--border);
+  }
+  [data-theme="dark"] .form-group input:focus,
+  [data-theme="dark"] .form-group select:focus,
+  [data-theme="dark"] .form-group textarea:focus {
+    background: #0f172a; box-shadow: 0 0 0 3px rgba(124,58,237,0.2);
+  }
+  [data-theme="dark"] .radio-group label { border-color: var(--border); }
+  [data-theme="dark"] .radio-group label:has(input:checked) { background: #1e1b4b; border-color: var(--primary); }
+  [data-theme="dark"] .btn-secondary { background: #334155; color: #94a3b8; }
+  [data-theme="dark"] .suggestions { background: #1e293b; border-color: var(--border); }
+  [data-theme="dark"] .sg-item { border-color: #334155; }
+  [data-theme="dark"] .sg-item:hover { background: #1e1b4b; }
+  [data-theme="dark"] .star-rating label { color: #475569; }
+  [data-theme="dark"] .card-stars .star-empty { color: #475569; }
+  [data-theme="dark"] .auto-filled { background: #1e1b4b !important; border-color: var(--primary) !important; }
+  [data-theme="dark"] .theme-toggle { background: rgba(255,255,255,0.08); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -248,8 +310,11 @@
 <body>
 
 <header>
-  <h1>美食地圖</h1>
-  <p>收藏你的口袋名單</p>
+  <div class="header-inner">
+    <h1>美食地圖</h1>
+    <p>收藏你的口袋名單</p>
+    <button class="theme-toggle" id="themeToggle" title="切換深色模式">&#9790;</button>
+  </div>
 </header>
 
 <div class="container">
@@ -742,6 +807,23 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 
 renderCards();
 loadFromFirestore();
+
+// Dark mode
+const savedTheme = localStorage.getItem('foodmap_theme') || 'light';
+document.documentElement.setAttribute('data-theme', savedTheme);
+updateThemeIcon(savedTheme);
+
+$('themeToggle').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('foodmap_theme', next);
+  updateThemeIcon(next);
+});
+
+function updateThemeIcon(theme) {
+  $('themeToggle').innerHTML = theme === 'dark' ? '&#9728;' : '&#9790;';
+}
 </script>
 </body>
 </html>
