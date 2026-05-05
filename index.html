@@ -460,7 +460,7 @@
 
 <script>
 const LS_KEY = 'foodmap_shops';
-const API_KEY = 'AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4';
+const API_KEY = localStorage.getItem('foodmap_places_key') || 'AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4';
 const typeEmoji = { '餐廳': '🍽️', '居酒屋': '🏮', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
 
 // Firebase
@@ -601,13 +601,30 @@ async function findNearbyMRT(lat, lng) {
 }
 
 /* ── Screenshot AI Recognition ── */
-const GEMINI_KEY = 'AIzaSyDCgeOCdp4-U3RReDsTuJDprlvr8J5ZUds';
+let GEMINI_KEY = localStorage.getItem('foodmap_gemini_key') || '';
+
+function promptGeminiKey() {
+  const key = prompt('請輸入你的 Gemini API Key（只需輸入一次，會儲存在瀏覽器中）：');
+  if (key && key.trim()) {
+    GEMINI_KEY = key.trim();
+    localStorage.setItem('foodmap_gemini_key', GEMINI_KEY);
+    return true;
+  }
+  return false;
+}
 
 $('screenshotUpload').addEventListener('click', () => $('screenshotInput').click());
 
 $('screenshotInput').addEventListener('change', async function() {
   const file = this.files[0];
   if (!file) return;
+
+  if (!GEMINI_KEY) {
+    if (!promptGeminiKey()) {
+      alert('需要 Gemini API Key 才能使用截圖辨識功能');
+      return;
+    }
+  }
 
   // Show preview
   const preview = $('screenshotPreview');
