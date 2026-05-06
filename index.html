@@ -59,7 +59,7 @@
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   header p { font-size: 0.85rem; opacity: 0.5; margin-top: 6px; letter-spacing: 1px; }
-  .container { max-width: 800px; margin: 0 auto; padding: 20px 16px 100px; }
+  .container { max-width: 800px; margin: 0 auto; padding: 20px 16px 80px; }
 
   .search-bar { position: relative; margin-bottom: 20px; }
   .search-bar input {
@@ -138,22 +138,26 @@
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
   .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
 
-  .fab-group { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 90; align-items: center; }
-  .fab {
-    width: 54px; height: 54px;
-    border-radius: 16px; background: linear-gradient(135deg, var(--primary), #6d28d9);
-    color: white; border: none; font-size: 1.6rem; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(124,58,237,0.4); display: flex;
-    align-items: center; justify-content: center; transition: all 0.2s;
+  /* Bottom tab bar */
+  .tab-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 90;
+    background: var(--card-bg); border-top: 1px solid var(--border);
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 6px 0 env(safe-area-inset-bottom, 8px);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
   }
-  .fab:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,0.5); }
-  .fab-explore {
-    background: linear-gradient(135deg, #06b6d4, #0891b2);
-    box-shadow: 0 4px 20px rgba(6,182,212,0.4); font-size: 1.3rem;
-    width: 48px; height: 48px; border-radius: 14px;
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-light); font-size: 0.65rem; font-weight: 600;
+    padding: 6px 16px; border-radius: 12px; transition: all 0.2s;
+    letter-spacing: 0.3px;
   }
-  .fab-explore:hover { box-shadow: 0 6px 24px rgba(6,182,212,0.5); }
-  .fab-explore.active { background: linear-gradient(135deg, #0891b2, #0e7490); box-shadow: 0 0 0 3px rgba(6,182,212,0.3), 0 4px 20px rgba(6,182,212,0.4); }
+  .tab-item .tab-icon { font-size: 1.3rem; line-height: 1; }
+  .tab-item:hover { color: var(--primary); }
+  .tab-item.active { color: var(--primary); }
+  .tab-item.active .tab-icon { transform: scale(1.1); }
+  [data-theme="dark"] .tab-bar { background: #1e293b; border-color: #334155; box-shadow: 0 -2px 12px rgba(0,0,0,0.3); }
 
   .card-distance {
     display: inline-block; font-size: 0.72rem; color: #06b6d4;
@@ -390,10 +394,26 @@
   <div class="card-list" id="cardList"></div>
 </div>
 
-<div class="fab-group">
-  <button class="fab fab-explore" id="exploreBtn" title="探索附近想去的店">&#9741;</button>
-  <button class="fab" id="fabBtn" title="新增店家">+</button>
+<div class="modal-overlay" id="settingsOverlay">
+  <div class="modal" style="max-width:400px;">
+    <h2>設定</h2>
+    <div class="form-group">
+      <label>Gemini API Key（截圖辨識用）</label>
+      <input type="text" id="settingsGeminiKey" placeholder="貼上你的 Gemini API Key">
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn btn-secondary" id="settingsCancel">取消</button>
+      <button type="button" class="btn btn-primary" id="settingsSave">儲存</button>
+    </div>
+  </div>
 </div>
+
+<nav class="tab-bar">
+  <button class="tab-item active" id="tabHome"><span class="tab-icon">&#127968;</span>首頁</button>
+  <button class="tab-item" id="exploreBtn"><span class="tab-icon">&#128204;</span>探索</button>
+  <button class="tab-item" id="fabBtn"><span class="tab-icon">&#10133;</span>新增</button>
+  <button class="tab-item" id="tabSettings"><span class="tab-icon">&#9881;</span>設定</button>
+</nav>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
@@ -1015,7 +1035,39 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 renderCards();
 loadFromFirestore();
 
-// Explore mode (already declared above)
+// Tab bar
+$('tabHome').addEventListener('click', () => {
+  setActiveTab('tabHome');
+  if (exploreMode) {
+    exploreMode = false;
+    shops.forEach(s => delete s._dist);
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+    activeFilter = 'all';
+    renderCards();
+  }
+});
+
+$('tabSettings').addEventListener('click', () => {
+  $('settingsGeminiKey').value = GEMINI_KEY || '';
+  $('settingsOverlay').classList.add('open');
+});
+$('settingsCancel').addEventListener('click', () => $('settingsOverlay').classList.remove('open'));
+$('settingsOverlay').addEventListener('click', e => { if (e.target === $('settingsOverlay')) $('settingsOverlay').classList.remove('open'); });
+$('settingsSave').addEventListener('click', () => {
+  const key = $('settingsGeminiKey').value.trim();
+  if (key) {
+    GEMINI_KEY = key;
+    localStorage.setItem('foodmap_gemini_key', GEMINI_KEY);
+  }
+  $('settingsOverlay').classList.remove('open');
+});
+
+function setActiveTab(id) {
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
 
 
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -1028,11 +1080,9 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 
 $('exploreBtn').addEventListener('click', () => {
   if (exploreMode) {
-    // Turn off explore mode
     exploreMode = false;
-    $('exploreBtn').classList.remove('active');
+    setActiveTab('tabHome');
     shops.forEach(s => delete s._dist);
-    // Reset filter to all
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
     activeFilter = 'all';
@@ -1040,7 +1090,7 @@ $('exploreBtn').addEventListener('click', () => {
     return;
   }
 
-  $('exploreBtn').classList.add('active');
+  setActiveTab('exploreBtn');
   $('countText').textContent = '定位中...';
 
   navigator.geolocation.getCurrentPosition(pos => {
