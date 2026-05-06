@@ -499,6 +499,8 @@ const shopsCol = db.collection('shops');
 let shops = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
 let activeFilter = 'all';
 let debounceTimer;
+let exploreMode = false;
+let userLat = null, userLng = null;
 
 const $ = id => document.getElementById(id);
 
@@ -1013,9 +1015,8 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 renderCards();
 loadFromFirestore();
 
-// Explore mode
-let exploreMode = false;
-let userLat = null, userLng = null;
+// Explore mode (already declared above)
+
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
