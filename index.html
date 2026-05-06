@@ -138,14 +138,30 @@
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
   .empty-state .emoji { font-size: 3rem; margin-bottom: 12px; }
 
+  .fab-group { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 90; align-items: center; }
   .fab {
-    position: fixed; bottom: 24px; right: 24px; width: 54px; height: 54px;
+    width: 54px; height: 54px;
     border-radius: 16px; background: linear-gradient(135deg, var(--primary), #6d28d9);
     color: white; border: none; font-size: 1.6rem; cursor: pointer;
     box-shadow: 0 4px 20px rgba(124,58,237,0.4); display: flex;
-    align-items: center; justify-content: center; transition: all 0.2s; z-index: 90;
+    align-items: center; justify-content: center; transition: all 0.2s;
   }
   .fab:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(124,58,237,0.5); }
+  .fab-explore {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    box-shadow: 0 4px 20px rgba(6,182,212,0.4); font-size: 1.3rem;
+    width: 48px; height: 48px; border-radius: 14px;
+  }
+  .fab-explore:hover { box-shadow: 0 6px 24px rgba(6,182,212,0.5); }
+  .fab-explore.active { background: linear-gradient(135deg, #0891b2, #0e7490); box-shadow: 0 0 0 3px rgba(6,182,212,0.3), 0 4px 20px rgba(6,182,212,0.4); }
+
+  .card-distance {
+    display: inline-block; font-size: 0.72rem; color: #06b6d4;
+    background: #ecfeff; padding: 3px 10px; border-radius: 20px;
+    font-weight: 600; border: 1px solid #cffafe; margin-left: 6px;
+  }
+  [data-theme="dark"] .card-distance { background: #083344; border-color: #164e63; color: #67e8f9; }
+  [data-theme="dark"] .fab-explore { background: linear-gradient(135deg, #0891b2, #0e7490); }
 
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 200;
@@ -374,13 +390,18 @@
   <div class="card-list" id="cardList"></div>
 </div>
 
-<button class="fab" id="fabBtn" title="新增店家">+</button>
+<div class="fab-group">
+  <button class="fab fab-explore" id="exploreBtn" title="探索附近想去的店">&#9741;</button>
+  <button class="fab" id="fabBtn" title="新增店家">+</button>
+</div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <h2 id="modalTitle">新增店家</h2>
     <form id="shopForm">
       <input type="hidden" id="editId">
+      <input type="hidden" id="editLat">
+      <input type="hidden" id="editLng">
       <div class="screenshot-upload" id="screenshotUpload">
         <div class="upload-icon">&#128247;</div>
         <div class="upload-text"><strong>上傳截圖</strong>，AI 自動辨識店家</div>
@@ -806,8 +827,10 @@ async function onSelectPlace(placeId, name) {
       $('fType').classList.add('auto-filled');
     }
 
-    // Nearest MRT
+    // Save coordinates & find nearest MRT
     if (place.location) {
+      $('editLat').value = place.location.latitude;
+      $('editLng').value = place.location.longitude;
       const mrt = await findNearbyMRT(place.location.latitude, place.location.longitude);
       if (mrt) {
         $('fMrt').value = mrt;
@@ -838,11 +861,23 @@ function renderCards() {
     return true;
   });
 
-  $('countText').textContent = `共 ${filtered.length} 間店家`;
+  // Sort by distance in explore mode
+  if (exploreMode) {
+    filtered.sort((a, b) => {
+      if (a._dist == null && b._dist == null) return 0;
+      if (a._dist == null) return 1;
+      if (b._dist == null) return -1;
+      return a._dist - b._dist;
+    });
+  }
+
+  $('countText').textContent = exploreMode
+    ? `附近有 ${filtered.length} 間想去的店`
+    : `共 ${filtered.length} 間店家`;
 
   if (filtered.length === 0) {
-    $('cardList').innerHTML = `<div class="empty-state"><div class="emoji">🗺️</div>
-      <p>${query || activeFilter !== 'all' ? '找不到符合的店家' : '還沒有店家，點右下角 + 新增吧！'}</p></div>`;
+    $('cardList').innerHTML = `<div class="empty-state"><div class="emoji">${exploreMode ? '📍' : '🗺️'}</div>
+      <p>${exploreMode ? '附近沒有想去的店家，去新增一些吧！' : (query || activeFilter !== 'all' ? '找不到符合的店家' : '還沒有店家，點右下角 + 新增吧！')}</p></div>`;
     return;
   }
 
@@ -854,7 +889,7 @@ function renderCards() {
           ${s.status === 'visited' ? '✓ 已去過' : '☆ 想去'}
         </span>
       </div>
-      <div class="card-type">${typeEmoji[s.type] || ''} ${esc(s.type)}</div>
+      <div class="card-type">${typeEmoji[s.type] || ''} ${esc(s.type)}</div>${s._dist != null ? `<span class="card-distance">&#128205; ${s._dist < 1 ? Math.round(s._dist * 1000) + 'm' : s._dist.toFixed(1) + 'km'}</span>` : ''}
       ${s.rating ? `<div class="card-stars">${'&#9733;'.repeat(s.rating)}<span class="star-empty">${'&#9733;'.repeat(5 - s.rating)}</span></div>` : ''}
       <div class="card-info">
         ${s.area ? `<span><span class="icon">📍</span>${esc(s.area)}</span>` : ''}
@@ -892,6 +927,8 @@ function openModal(shop) {
   clearAutoFill();
   $('modalTitle').textContent = shop ? '編輯店家' : '新增店家';
   $('editId').value = shop ? shop.id : '';
+  $('editLat').value = shop ? (shop.lat || '') : '';
+  $('editLng').value = shop ? (shop.lng || '') : '';
   fName.value = shop ? shop.name : '';
   $('fType').value = shop ? shop.type : '餐廳';
   $('fArea').value = shop ? shop.area : '';
@@ -949,6 +986,8 @@ $('shopForm').addEventListener('submit', e => {
     address: $('fAddress').value.trim(),
     status: document.querySelector('input[name="fStatus"]:checked').value,
     rating: (() => { const r = document.querySelector('input[name="fRating"]:checked'); return r ? parseInt(r.value) : 0; })(),
+    lat: parseFloat($('editLat').value) || null,
+    lng: parseFloat($('editLng').value) || null,
     note: $('fNote').value.trim(),
   };
   const idx = shops.findIndex(x => x.id === id);
@@ -973,6 +1012,62 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 
 renderCards();
 loadFromFirestore();
+
+// Explore mode
+let exploreMode = false;
+let userLat = null, userLng = null;
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+$('exploreBtn').addEventListener('click', () => {
+  if (exploreMode) {
+    // Turn off explore mode
+    exploreMode = false;
+    $('exploreBtn').classList.remove('active');
+    shops.forEach(s => delete s._dist);
+    // Reset filter to all
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+    activeFilter = 'all';
+    renderCards();
+    return;
+  }
+
+  $('exploreBtn').classList.add('active');
+  $('countText').textContent = '定位中...';
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    userLat = pos.coords.latitude;
+    userLng = pos.coords.longitude;
+    exploreMode = true;
+
+    // Set filter to "want"
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn[data-filter="want"]').classList.add('active');
+    activeFilter = 'want';
+
+    // Calculate distances
+    shops.forEach(s => {
+      if (s.lat && s.lng) {
+        s._dist = haversineKm(userLat, userLng, s.lat, s.lng);
+      } else {
+        s._dist = null;
+      }
+    });
+
+    renderCards();
+  }, err => {
+    $('exploreBtn').classList.remove('active');
+    alert('無法取得定位，請確認已開啟定位權限');
+    $('countText').textContent = `共 ${shops.length} 間店家`;
+  }, { enableHighAccuracy: true });
+});
 
 // Dark mode
 const savedTheme = localStorage.getItem('foodmap_theme') || 'light';
