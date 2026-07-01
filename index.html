@@ -377,11 +377,48 @@
     font-size: 0.8rem; cursor: pointer; white-space: nowrap; transition: transform 0.15s;
   }
   .update-banner button:hover { transform: translateY(-1px); }
+
+  /* Login overlay */
+  .login-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+    display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  .login-overlay.show { display: flex; }
+  .login-box {
+    background: var(--card-bg); border-radius: 20px; padding: 36px 28px;
+    text-align: center; max-width: 340px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+  .login-logo { font-size: 3rem; margin-bottom: 8px; }
+  .login-box h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 8px; letter-spacing: 2px; }
+  .login-box p { font-size: 0.88rem; color: var(--text-light); margin-bottom: 24px; }
+  .login-box .btn { width: 100%; }
+  .login-error { margin-top: 14px; font-size: 0.82rem; color: var(--want); min-height: 1em; }
+
+  /* Account section in settings */
+  .account-section {
+    margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .account-label { font-size: 0.75rem; color: var(--text-light); margin-bottom: 4px; }
+  .account-email { font-size: 0.9rem; font-weight: 600; margin-bottom: 12px; word-break: break-all; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 </head>
 <body>
+
+<div class="login-overlay show" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">&#127837;</div>
+    <h2>美食地圖</h2>
+    <p>請登入以存取你的口袋名單</p>
+    <button type="button" class="btn btn-primary" id="googleSignIn">使用 Google 登入</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
 
 <header>
   <div class="header-inner">
@@ -426,6 +463,11 @@
     <div class="btn-row">
       <button type="button" class="btn btn-secondary" id="settingsCancel">取消</button>
       <button type="button" class="btn btn-primary" id="settingsSave">儲存</button>
+    </div>
+    <div class="account-section">
+      <div class="account-label">目前登入帳號</div>
+      <div class="account-email" id="currentUserEmail"></div>
+      <button type="button" class="btn btn-secondary" id="signOutBtn">登出</button>
     </div>
   </div>
 </div>
@@ -568,6 +610,7 @@ async function loadFromFirestore() {
       }
     }
   } catch (e) {
+    if (e.code === 'permission-denied') throw e;
     console.warn('Firestore 載入失敗，使用本地資料:', e.message);
   }
 }
@@ -1065,7 +1108,41 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
 });
 
 renderCards();
-loadFromFirestore();
+
+/* ── Firebase Auth：Google 登入 + 權限控管 ── */
+const auth = firebase.auth();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+$('googleSignIn').addEventListener('click', () => {
+  $('loginError').textContent = '登入中...';
+  auth.signInWithPopup(googleProvider).catch(e => {
+    $('loginError').textContent = '登入失敗：' + (e.message || e.code);
+  });
+});
+
+$('signOutBtn').addEventListener('click', () => {
+  auth.signOut();
+  $('settingsOverlay').classList.remove('open');
+});
+
+auth.onAuthStateChanged(async user => {
+  if (!user) {
+    $('loginOverlay').classList.add('show');
+    return;
+  }
+  try {
+    await loadFromFirestore();
+  } catch (e) {
+    if (e.code === 'permission-denied') {
+      $('loginError').textContent = `此帳號（${user.email}）沒有使用權限，請聯絡管理員`;
+      await auth.signOut();
+      return;
+    }
+    // 其他錯誤（如離線）：沿用本地快取
+  }
+  $('currentUserEmail').textContent = user.email || '';
+  $('loginOverlay').classList.remove('show');
+});
 
 // Tab bar
 $('tabHome').addEventListener('click', () => {
