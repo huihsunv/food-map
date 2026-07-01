@@ -398,6 +398,10 @@
   <div class="modal" style="max-width:400px;">
     <h2>設定</h2>
     <div class="form-group">
+      <label>Google Places API Key（自動帶入店家資料用）</label>
+      <input type="text" id="settingsPlacesKey" placeholder="貼上你的 Google Places API Key">
+    </div>
+    <div class="form-group">
       <label>Gemini API Key（截圖辨識用）</label>
       <input type="text" id="settingsGeminiKey" placeholder="貼上你的 Gemini API Key">
     </div>
@@ -501,7 +505,7 @@
 
 <script>
 const LS_KEY = 'foodmap_shops';
-const API_KEY = localStorage.getItem('foodmap_places_key') || 'AIzaSyB4LqWiRWyN0v7bP4mnP04RUR3kCsWdRP4';
+let API_KEY = localStorage.getItem('foodmap_places_key') || '';
 const typeEmoji = { '餐廳': '🍽️', '居酒屋': '🏮', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
 
 // Firebase
@@ -570,6 +574,11 @@ function mapsUrl(address, name) {
 /* ── Google Places REST API (no JS library needed) ── */
 
 async function searchPlaces(query) {
+  if (!API_KEY) {
+    sgBox.innerHTML = '<div class="sg-loading">請先到「設定」輸入 Google Places API Key</div>';
+    sgBox.classList.add('open');
+    return null;
+  }
   const res = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
     method: 'POST',
     headers: {
@@ -1049,12 +1058,18 @@ $('tabHome').addEventListener('click', () => {
 });
 
 $('tabSettings').addEventListener('click', () => {
+  $('settingsPlacesKey').value = API_KEY || '';
   $('settingsGeminiKey').value = GEMINI_KEY || '';
   $('settingsOverlay').classList.add('open');
 });
 $('settingsCancel').addEventListener('click', () => $('settingsOverlay').classList.remove('open'));
 $('settingsOverlay').addEventListener('click', e => { if (e.target === $('settingsOverlay')) $('settingsOverlay').classList.remove('open'); });
 $('settingsSave').addEventListener('click', () => {
+  const placesKey = $('settingsPlacesKey').value.trim();
+  API_KEY = placesKey;
+  if (placesKey) localStorage.setItem('foodmap_places_key', placesKey);
+  else localStorage.removeItem('foodmap_places_key');
+
   const key = $('settingsGeminiKey').value.trim();
   if (key) {
     GEMINI_KEY = key;
