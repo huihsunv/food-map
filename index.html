@@ -359,6 +359,24 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   [data-theme="dark"] .screenshot-upload { border-color: var(--border); background: rgba(124,58,237,0.05); }
   [data-theme="dark"] .screenshot-upload:hover { border-color: var(--primary); background: rgba(124,58,237,0.1); }
+
+  /* Update banner */
+  .update-banner {
+    position: fixed; left: 16px; right: 16px; bottom: 80px; z-index: 300;
+    background: linear-gradient(135deg, var(--primary), #6d28d9); color: white;
+    padding: 12px 16px; border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(124,58,237,0.4);
+    display: none; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 0.88rem; font-weight: 600; max-width: 600px; margin: 0 auto;
+    animation: slideUp 0.3s ease;
+  }
+  .update-banner.show { display: flex; }
+  .update-banner button {
+    background: white; color: var(--primary); border: none;
+    padding: 8px 18px; border-radius: 20px; font-weight: 700;
+    font-size: 0.8rem; cursor: pointer; white-space: nowrap; transition: transform 0.15s;
+  }
+  .update-banner button:hover { transform: translateY(-1px); }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -418,6 +436,11 @@
   <button class="tab-item" id="fabBtn"><span class="tab-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>新增</button>
   <button class="tab-item" id="tabSettings"><span class="tab-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>設定</button>
 </nav>
+
+<div class="update-banner" id="updateBanner">
+  <span>&#127881; 有新版本可用</span>
+  <button id="updateBtn">立即更新</button>
+</div>
 
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
@@ -1150,6 +1173,44 @@ $('themeToggle').addEventListener('click', () => {
 
 function updateThemeIcon(theme) {
   $('themeToggle').innerHTML = theme === 'dark' ? '&#9728;' : '&#9790;';
+}
+
+/* ── Service Worker：離線快取 + 自動更新提示 ── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      // 若已經有等待中的新版，直接顯示提示
+      if (reg.waiting && navigator.serviceWorker.controller) showUpdateBanner(reg);
+
+      // 偵測到新版正在安裝
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateBanner(reg);
+          }
+        });
+      });
+    }).catch(err => console.warn('Service Worker 註冊失敗:', err));
+
+    // 新版接手後自動重新整理（只重整一次，避免無限迴圈）
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    });
+  });
+}
+
+function showUpdateBanner(reg) {
+  const banner = $('updateBanner');
+  banner.classList.add('show');
+  $('updateBtn').onclick = () => {
+    banner.classList.remove('show');
+    if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
+  };
 }
 </script>
 </body>
