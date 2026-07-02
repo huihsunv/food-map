@@ -437,10 +437,17 @@
   <div class="filter-row">
     <button class="filter-btn active" data-filter="all">全部</button>
     <button class="filter-btn" data-filter="餐廳">餐廳</button>
+    <button class="filter-btn" data-filter="日式料理">日式料理</button>
+    <button class="filter-btn" data-filter="韓式料理">韓式料理</button>
+    <button class="filter-btn" data-filter="中式料理">中式料理</button>
+    <button class="filter-btn" data-filter="義式料理">義式料理</button>
+    <button class="filter-btn" data-filter="火鍋">火鍋</button>
+    <button class="filter-btn" data-filter="燒肉/烤肉">燒肉/烤肉</button>
     <button class="filter-btn" data-filter="居酒屋">居酒屋</button>
     <button class="filter-btn" data-filter="酒吧">酒吧</button>
     <button class="filter-btn" data-filter="小吃">小吃</button>
     <button class="filter-btn" data-filter="咖啡廳">咖啡廳</button>
+    <button class="filter-btn" data-filter="甜點/麵包">甜點/麵包</button>
     <button class="filter-btn" data-filter="visited">已去過</button>
     <button class="filter-btn" data-filter="want">想去</button>
   </div>
@@ -514,10 +521,17 @@
           <label>類型 *</label>
           <select id="fType" required>
             <option value="餐廳">餐廳</option>
+            <option value="日式料理">日式料理</option>
+            <option value="韓式料理">韓式料理</option>
+            <option value="中式料理">中式料理</option>
+            <option value="義式料理">義式料理</option>
+            <option value="火鍋">火鍋</option>
+            <option value="燒肉/烤肉">燒肉/烤肉</option>
             <option value="居酒屋">居酒屋</option>
             <option value="酒吧">酒吧</option>
             <option value="小吃">小吃</option>
             <option value="咖啡廳">咖啡廳</option>
+            <option value="甜點/麵包">甜點/麵包</option>
           </select>
         </div>
         <div class="form-group">
@@ -571,7 +585,11 @@
 <script>
 const LS_KEY = 'foodmap_shops';
 let API_KEY = localStorage.getItem('foodmap_places_key') || '';
-const typeEmoji = { '餐廳': '🍽️', '居酒屋': '🏮', '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕' };
+const typeEmoji = {
+  '餐廳': '🍽️', '日式料理': '🍣', '韓式料理': '🌶️', '中式料理': '🥢',
+  '義式料理': '🍝', '火鍋': '🍲', '燒肉/烤肉': '🍖', '居酒屋': '🏮',
+  '酒吧': '🍸', '小吃': '🍜', '咖啡廳': '☕', '甜點/麵包': '🍰'
+};
 
 // Firebase
 firebase.initializeApp({
