@@ -1,7 +1,7 @@
 // 美食地圖 Service Worker
 // 每次要發佈新版時，把下面的版本號 +1（例如 v1 -> v2），
 // 使用者就會收到「有新版本」的更新提示。
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE = `foodmap-${VERSION}`;
 
 // App 外殼：離線時仍可開啟
