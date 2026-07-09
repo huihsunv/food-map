@@ -278,7 +278,6 @@
     font-size: 1.1rem; transition: all 0.2s;
   }
   .theme-toggle:hover { background: rgba(255,255,255,0.2); }
-  header { position: sticky; top: 0; z-index: 100; }
   header .header-inner { position: relative; }
 
   /* Dark mode */
@@ -648,6 +647,42 @@ const $ = id => document.getElementById(id);
 
 function saveLocal() { localStorage.setItem(LS_KEY, JSON.stringify(shops)); }
 
+/* ── 離線同步佇列 ──
+   寫入（新增/編輯/刪除）先進佇列並存在 localStorage（關網頁也不會遺失），
+   再嘗試送到 Firestore；離線失敗就留著，重新連線時自動補送。 */
+const PENDING_KEY = 'foodmap_pending';
+let pending = JSON.parse(localStorage.getItem(PENDING_KEY) || '[]');
+let flushing = false;
+
+function savePending() { localStorage.setItem(PENDING_KEY, JSON.stringify(pending)); }
+
+function enqueue(op) {
+  // 同一店家只保留最新一筆操作（後蓋前）
+  pending = pending.filter(p => p.id !== op.id);
+  pending.push(op);
+  savePending();
+}
+
+async function flushPending() {
+  if (flushing || !pending.length) return;
+  flushing = true;
+  const remaining = [];
+  for (const op of pending) {
+    try {
+      if (op.type === 'delete') await shopsCol.doc(op.id).delete();
+      else await shopsCol.doc(op.id).set(op.data);
+    } catch (e) {
+      if (e.code === 'permission-denied') continue; // 無權限：丟棄，不無限重試
+      remaining.push(op); // 離線/暫時失敗：留著下次補送
+    }
+  }
+  pending = remaining;
+  savePending();
+  flushing = false;
+}
+
+window.addEventListener('online', flushPending);
+
 // Load from Firestore on startup
 async function loadFromFirestore() {
   try {
@@ -659,8 +694,10 @@ async function loadFromFirestore() {
     } else if (shops.length > 0) {
       // First time: migrate localStorage data to Firestore
       for (const s of shops) {
-        await shopsCol.doc(s.id).set({ ...s, createdAt: Date.now() });
+        if (!s.createdAt) s.createdAt = Date.now();
+        await shopsCol.doc(s.id).set(s);
       }
+      saveLocal();
     }
   } catch (e) {
     if (e.code === 'permission-denied') throw e;
@@ -670,20 +707,14 @@ async function loadFromFirestore() {
 
 async function saveShop(data) {
   saveLocal();
-  try {
-    await shopsCol.doc(data.id).set({ ...data, createdAt: Date.now() });
-  } catch (e) {
-    console.warn('Firestore 儲存失敗:', e.message);
-  }
+  enqueue({ type: 'set', id: data.id, data });
+  await flushPending();
 }
 
 async function removeShop(id) {
   saveLocal();
-  try {
-    await shopsCol.doc(id).delete();
-  } catch (e) {
-    console.warn('Firestore 刪除失敗:', e.message);
-  }
+  enqueue({ type: 'delete', id });
+  await flushPending();
 }
 
 function mapsUrl(address, name) {
@@ -1032,13 +1063,14 @@ function subStatus(s) {
 
 function renderCards() {
   const query = $('searchInput').value.trim().toLowerCase();
+  const nq = query ? normalize(query) : '';
   let filtered = shops.filter(s => {
     if (filter.status !== 'all' && s.status !== filter.status) return false;
     if (filter.status === 'visited' && filter.sub !== 'all' && subStatus(s) !== filter.sub) return false;
     if (filter.type !== 'all' && s.type !== filter.type) return false;
-    if (query) {
+    if (nq) {
       const hay = normalize([s.name, s.type, s.area, s.mrt, s.address, s.note].join(' '));
-      return hay.includes(normalize(query));
+      return hay.includes(nq);
     }
     return true;
   });
@@ -1164,8 +1196,10 @@ $('modalOverlay').addEventListener('click', e => { if (e.target === $('modalOver
 $('shopForm').addEventListener('submit', e => {
   e.preventDefault();
   const id = $('editId').value || Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const existing = shops.find(x => x.id === id);
   const data = {
     id,
+    createdAt: existing && existing.createdAt ? existing.createdAt : Date.now(),
     name: fName.value.trim(),
     type: $('fType').value,
     area: $('fArea').value.trim(),
@@ -1265,7 +1299,8 @@ auth.onAuthStateChanged(async user => {
     return;
   }
   try {
-    await loadFromFirestore();
+    await flushPending();     // 先補送上次離線時未同步的寫入，確保伺服器最新
+    await loadFromFirestore(); // 再拉回最新資料
   } catch (e) {
     if (e.code === 'permission-denied') {
       $('loginError').textContent = `此帳號（${user.email}）沒有使用權限，請聯絡管理員`;
